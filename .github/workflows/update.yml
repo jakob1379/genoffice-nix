@@ -1,0 +1,47 @@
+name: update
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Find the latest upstream tag
+        id: tag
+        run: |
+          tag=$(git ls-remote --tags --refs --sort=-v:refname https://github.com/genspark-ai/genoffice 'v*' | head -1 | sed 's|.*refs/tags/||')
+          current=$(grep -oP 'genspark-ai/genoffice/\Kv[0-9.]+' flake.nix)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          [ "$tag" != "$current" ] && echo "new=true" >> "$GITHUB_OUTPUT" || true
+      - if: steps.tag.outputs.new
+        uses: jlumbroso/free-disk-space@v1.3.1
+      - if: steps.tag.outputs.new
+        uses: cachix/install-nix-action@v31
+      - name: Bump, build and test
+        if: steps.tag.outputs.new
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          sed -i -E "s|(genspark-ai/genoffice/)v[0-9.]+|\1$TAG|; s|(version = \")[0-9.]+|\1${TAG#v}|" flake.nix
+          nix flake update genoffice-src nixpkgs
+          nix build -L
+      - name: Open a pull request
+        if: steps.tag.outputs.new
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git switch -c "update/$TAG"
+          git commit -am "feat: update genoffice to $TAG"
+          git push -f origin "update/$TAG"
+          gh pr create --fill --head "update/$TAG" || true

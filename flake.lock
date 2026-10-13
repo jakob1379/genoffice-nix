@@ -1,0 +1,45 @@
+{
+  "nodes": {
+    "genoffice-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791733748,
+        "narHash": "sha256-ooAjqypNArPD6LVi+CRcx40g57MLp4+Etk6owb3rY5Q=",
+        "owner": "genspark-ai",
+        "repo": "genoffice",
+        "rev": "ab429d0e4cf533a8457f8721650837c98592baa9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "genspark-ai",
+        "ref": "v0.11.564",
+        "repo": "genoffice",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1791734076,
+        "narHash": "sha256-i5qk1kLiit98rRbh1AXmWBNT9QXC/y4l5Wk/u5EdpDQ=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "7fd4004d0511991fff3a0524856a9be09e28c5f0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "genoffice-src": "genoffice-src",
+        "nixpkgs": "nixpkgs"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

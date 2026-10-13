@@ -1,0 +1,46 @@
+From 4b42229f4fa6bca3a7684c97f36c5f63adcdedd1 Mon Sep 17 00:00:00 2001
+From: Jakob Stender Guldberg <jakob1379@gmail.com>
+Date: Tue, 6 Oct 2026 10:37:56 +0200
+Subject: [PATCH 2/2] test(docs): let protect-dialog submit wait for the test
+ timeout
+
+The submit helper gave the iterated SHA-512 (100k rounds) a fixed 10s
+wall-clock budget, independent of the test timeout. Under heavy machine
+load the hash overran it and the test failed although nothing was wrong.
+Poll until the outcome shows up, bounded by vitest's own test timeout,
+and stop polling via onTestFinished so a timed-out test leaves no loop
+calling act() during later tests.
+---
+ apps/docs/tests/protect-dialog.test.ts | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/apps/docs/tests/protect-dialog.test.ts b/apps/docs/tests/protect-dialog.test.ts
+index e7958143..d2405059 100644
+--- a/apps/docs/tests/protect-dialog.test.ts
++++ b/apps/docs/tests/protect-dialog.test.ts
+@@ -1,7 +1,7 @@
+ // Protect Document dialog (Review > Protect): the dialog turns form state into
+ // a diff (ProtectDialogResult) — untouched sections must stay undefined, and
+ // removing a password-protected restriction must verify the password first.
+-import { describe, expect, it, vi } from 'vitest'
++import { describe, expect, it, onTestFinished, vi } from 'vitest'
+ import { act, createElement } from 'react'
+ import { createRoot, type Root } from 'react-dom/client'
+ import { hashProtectionPassword, verifyProtectionPassword } from '@genoffice/docx-engine'
+@@ -45,8 +45,11 @@ async function mount(partial: Partial<Props>) {
+   // flushing until the expected outcome shows up instead of guessing a delay
+   const submit = async (done: () => boolean) => {
+     await click(host.querySelector('.btn-primary')!)
+-    const start = Date.now()
+-    while (!done() && Date.now() - start < 10_000) {
++    let finished = false
++    onTestFinished(() => {
++      finished = true
++    })
++    while (!done() && !finished) {
+       await act(async () => {
+         await new Promise((r) => setTimeout(r, 10))
+       })
+-- 
+2.55.0
+
